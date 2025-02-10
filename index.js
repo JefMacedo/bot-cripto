@@ -6,7 +6,7 @@ const SELL_PRICE = 98200;
 
 const API_URL = 'https://testnet.binance.vision/';//https://api.binance.com/';
 
-let isOpened
+let isOpened = false;
 
 async function start() {
     console.clear();
@@ -20,9 +20,13 @@ async function start() {
 
     if(price <= BUY_PRICE && isOpened === false) {
         console.log('Buy!');
-    } else if(price >= SELL_PRICE && isOpened === true) {
+        isOpened = true;
+    }
+    else if(price >= SELL_PRICE && isOpened === true) {
         console.log('Sell!');
-    } else{
+        isOpened = false;
+    }
+    else{
         console.log('Hodl!');
     }
 }
