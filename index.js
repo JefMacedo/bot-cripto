@@ -7,8 +7,8 @@ const PERIOD = 14;
 
 //CREDENCIAIS PARA ACESSO A API DE TESTE DA BINANCE
 const API_URL = "https://testnet.binance.vision";
-const API_KEY = "ZOW8InO3PzoPo2cSSOMQs5UB1Y4GHhQM6FWpKNtwAUFXrTbhP2NcWBDFq96mpwwA";
-const SECRET_KEY = "pIfidYCJkGBX5nhVZVRWVoYeseKKStKkzdURX0oMAEIPFzS46fKLsSItDTy9G7Ri";
+const API_KEY = process.env.API_KEY;
+const SECRET_KEY = process.env.SECRET_KEY;
 
 //CREDENCIAIS PARA ACESSO A API DE PRODUÇÃO DA BINANCE
 //const API_URL = "https://api.binance.com/";
@@ -26,31 +26,31 @@ function averages(prices, period, startIndex) {
 
     let avgGain = gains / period;
     let avgLoss = losses / period;
-    
+
     return { avgGain, avgLoss };
 }
 
 function calcRSI(prices, period) {
     let avgGains = 0, avgLosses = 0;
 
-    for(let i = 1; i < prices.length; i++){
+    for (let i = 1; i < prices.length; i++) {
         let newAverages = averages(prices, period, i);
 
-        if(i <= 3){
+        if (i <= 3) {
             avgGains = newAverages.avgGain;
             avgLosses = newAverages.avgLoss;
             continue;
         }
 
-        avgGains = (avgGains * (period -1) + newAverages.avgGain) / period;
-        avgLosses = (avgLosses * (period -1) + newAverages.avgLoss) / period;
+        avgGains = (avgGains * (period - 1) + newAverages.avgGain) / period;
+        avgLosses = (avgLosses * (period - 1) + newAverages.avgLoss) / period;
     }
 
     const rs = avgGains / avgLosses;
     return 100 - (100 / (1 + rs));
 }
 
-async function newOrder(symbol, quantity, side){
+async function newOrder(symbol, quantity, side) {
     const order = { symbol, quantity, side };
     order.type = "MARKET";
     order.timestamp = Date.now();
@@ -62,17 +62,17 @@ async function newOrder(symbol, quantity, side){
 
     order.signature = signature;
 
-    try{
-        const {data} = await axios.post(
-            API_URL + "/api/v3/order", 
-            new URLSearchParams(order).toString(), 
+    try {
+        const { data } = await axios.post(
+            API_URL + "/api/v3/order",
+            new URLSearchParams(order).toString(),
             {
                 headers: { "X-MBX-APIKEY": API_KEY }
             }
         )
         console.log(data);
     }
-    catch(err){
+    catch (err) {
         console.error(err.response.data);
     }
 }
@@ -83,8 +83,8 @@ async function start() {
     console.clear();
     console.log('Checking price...');
 
-    const {data} = await axios.get(`${API_URL}/api/v3/klines?limit=100&interval=1m&symbol=${SYMBOL}`);
-    const candle = data[data.length -1];
+    const { data } = await axios.get(`${API_URL}/api/v3/klines?limit=100&interval=1m&symbol=${SYMBOL}`);
+    const candle = data[data.length - 1];
     const lastPrice = parseFloat(candle[4]);
 
     console.log(`Price: ${lastPrice}`);
@@ -93,21 +93,21 @@ async function start() {
     const rsi = calcRSI(prices, PERIOD);
     console.log(`RSI: ${rsi}`);
 
-    if(rsi < 35 && isOpened === false) {
+    if (rsi < 35 && isOpened === false) {
         console.log('Sobrevendido, hora de comprar');
         isOpened = true;
-        
+
         newOrder(SYMBOL, QUANTITY, 'BUY');
         console.log('Ordem de compra enviada!');
     }
-    else if(rsi > 70 && isOpened === true) {
+    else if (rsi > 70 && isOpened === true) {
         console.log('Sobrecomprado, hora de vender!');
         isOpened = false;
-        
+
         newOrder(SYMBOL, QUANTITY, 'SELL');
         console.log('Ordem de venda enviada!');
     }
-    else{
+    else {
         console.log('Aguardar!');
     }
 }
